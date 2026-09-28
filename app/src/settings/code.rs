@@ -100,4 +100,16 @@ define_settings_group!(CodeSettings, settings: [
         toml_path: "code.editor.auto_save",
         description: "Whether the Warp text editor automatically saves changes as you type and when the editor loses focus.",
     },
+    // Opt-in close affordance for crowded code-pane tabs. Off keeps the
+    // historical layout: every tab shows its close button when active or hovered.
+    adaptive_tab_close_button: AdaptiveTabCloseButton {
+        type: bool,
+        default: false,
+        supported_platforms: SupportedPlatforms::ALL,
+        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
+        surface: settings::SettingSurfaces::GUI,
+        private: false,
+        toml_path: "code.editor.adaptive_tab_close_button",
+        description: "When enabled, code pane tabs hide the close button as they get narrower and show it on hover of the active tab.",
+    },
 ]);

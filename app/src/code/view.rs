@@ -61,7 +61,7 @@ use crate::quit_warning::UnsavedStateSummary;
 use crate::search::ItemHighlightState;
 use crate::search::files::icon::icon_from_file_path;
 use crate::server::telemetry::CodeContextDestination;
-use crate::settings::CodeSettings;
+use crate::settings::{CodeSettings, CodeSettingsChangedEvent};
 use crate::tab::TAB_BAR_BORDER_HEIGHT;
 use crate::terminal::cli_agent::{
     build_selection_line_range_prompt, build_selection_substring_prompt,
@@ -335,6 +335,16 @@ impl CodeView {
     fn new_internal(source: CodeSource, ctx: &mut ViewContext<Self>) -> Self {
         let pane_configuration = ctx.add_model(|_ctx| PaneConfiguration::new(""));
         let window_id = ctx.window_id();
+
+        // Re-render open tabs when the user toggles the adaptive close button.
+        ctx.subscribe_to_model(&CodeSettings::handle(ctx), |_me, _, event, ctx| {
+            if matches!(
+                event,
+                CodeSettingsChangedEvent::AdaptiveTabCloseButton { .. }
+            ) {
+                ctx.notify();
+            }
+        });
 
         Self {
             tab_group: Default::default(),
@@ -1943,7 +1953,11 @@ impl CodeView {
             app.element_position_by_id_at_last_frame(self.window_id, &tabs_row_position_id)
                 .map(|rect| rect.width())
         };
-        let display_mode = if is_pane_dragging {
+        // Off by default (`code.editor.adaptive_tab_close_button`). When
+        // disabled, every tab keeps the historical Wide layout so the close
+        // button stays on hover or when the tab is active.
+        let adaptive_tab_close_button = *CodeSettings::as_ref(app).adaptive_tab_close_button;
+        let display_mode = if is_pane_dragging || !adaptive_tab_close_button {
             TabDisplayMode::Wide
         } else {
             TabDisplayMode::from_tabs_row_width(tabs_row_width, self.tab_group.len())
@@ -2695,7 +2709,7 @@ fn render_unsaved_changes_icon(color: ColorU) -> Box<dyn Element> {
 #[cfg(test)]
 mod tab_display_mode_tests {
     use super::{
-        TabDisplayMode, TAB_MEDIUM_THRESHOLD, TAB_VERY_NARROW_THRESHOLD, TAB_WIDE_THRESHOLD,
+        TAB_MEDIUM_THRESHOLD, TAB_VERY_NARROW_THRESHOLD, TAB_WIDE_THRESHOLD, TabDisplayMode,
     };
 
     #[test]

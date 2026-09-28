@@ -89,6 +89,7 @@ impl EditorAndCodeReviewPageView {
             Box::new(ShowHiddenFilesToggleWidget::default()),
             Box::new(FormatOnSaveToggleWidget::default()),
             Box::new(AutoSaveToggleWidget::default()),
+            Box::new(AdaptiveTabCloseButtonToggleWidget::default()),
         ]);
 
         PageType::new_uncategorized(widgets, Some(PageTitle::new(PAGE_TITLE)))
@@ -155,6 +156,7 @@ pub enum EditorAndCodeReviewPageAction {
     ToggleShowHiddenFiles,
     ToggleFormatOnSave,
     ToggleAutoSave,
+    ToggleAdaptiveTabCloseButton,
     SetCodeEditorLineNumberMode(CodeEditorLineNumberMode),
 }
 
@@ -206,6 +208,16 @@ impl TypedActionView for EditorAndCodeReviewPageView {
             EditorAndCodeReviewPageAction::ToggleAutoSave => {
                 CodeSettings::handle(ctx).update(ctx, |settings, ctx| {
                     report_if_error!(settings.auto_save.toggle_and_save_value(ctx));
+                });
+                ctx.notify();
+            }
+            EditorAndCodeReviewPageAction::ToggleAdaptiveTabCloseButton => {
+                CodeSettings::handle(ctx).update(ctx, |settings, ctx| {
+                    report_if_error!(
+                        settings
+                            .adaptive_tab_close_button
+                            .toggle_and_save_value(ctx)
+                    );
                 });
                 ctx.notify();
             }
@@ -333,6 +345,14 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
                 )),
                 context,
                 flags::SHOW_HIDDEN_FILES,
+            ),
+            ToggleSettingActionPair::new(
+                "adaptive tab close button",
+                builder(SettingsAction::EditorAndCodeReview(
+                    EditorAndCodeReviewPageAction::ToggleAdaptiveTabCloseButton,
+                )),
+                context,
+                flags::ADAPTIVE_TAB_CLOSE_BUTTON,
             ),
         ],
         app,
@@ -695,6 +715,51 @@ impl SettingsWidget for AutoSaveToggleWidget {
                 .finish(),
             Some(
                 "Automatically saves changes in the Warp text editor as you type and when the editor loses focus."
+                    .into(),
+            ),
+        )
+    }
+}
+
+#[derive(Default)]
+struct AdaptiveTabCloseButtonToggleWidget {
+    switch_state: SwitchStateHandle,
+}
+
+impl SettingsWidget for AdaptiveTabCloseButtonToggleWidget {
+    type View = EditorAndCodeReviewPageView;
+
+    fn search_terms(&self) -> &str {
+        "close button tab narrow hover code pane editor x file icon"
+    }
+
+    fn render(
+        &self,
+        _view: &Self::View,
+        appearance: &Appearance,
+        app: &AppContext,
+    ) -> Box<dyn Element> {
+        let code_settings = CodeSettings::as_ref(app);
+
+        render_body_item::<EditorAndCodeReviewPageAction>(
+            "Adaptive tab close button".into(),
+            None,
+            LocalOnlyIconState::Hidden,
+            ToggleState::Enabled,
+            appearance,
+            appearance
+                .ui_builder()
+                .switch(self.switch_state.clone())
+                .check(*code_settings.adaptive_tab_close_button)
+                .build()
+                .on_click(move |ctx, _, _| {
+                    ctx.dispatch_typed_action(
+                        EditorAndCodeReviewPageAction::ToggleAdaptiveTabCloseButton,
+                    );
+                })
+                .finish(),
+            Some(
+                "When code pane tabs get narrow, hide the close button until you hover the active tab. Very narrow tabs replace the file icon with the close button. Off keeps the usual close button on every hovered or active tab."
                     .into(),
             ),
         )
