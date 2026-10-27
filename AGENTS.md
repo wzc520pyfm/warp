@@ -250,3 +250,10 @@ if FeatureFlag::YourNewFeature.is_enabled() {
 ### Exhaustive Matching
 
 When adding/editing match statements, avoid using the wildcard _ when at all possible. Exhaustive matching is helpful for ensuring that all variants are handled, especially when adding new variants to enums in the future.
+
+## Cursor Cloud specific instructions
+
+- Build and test with `CARGO_BUILD_JOBS=2`. A debug build of `warp_tui` links a very large binary, and the default Cargo job count can exhaust a 16 GB Cloud Agent VM.
+- The headless app is `CARGO_BUILD_JOBS=2 cargo build -p warp_tui --bin warp-tui-oss` (or `./script/run-tui`). It opens on a welcome screen; Enter starts device login at `app.warp.dev`. Set `WARP_API_KEY` to skip that login.
+- `c++` is `g++`, and `libstdc++.so` / `libgcc_s.so` are linked onto the multiarch library path so Rust's bundled `lld` can link C++ crates such as `esaxx-rs`.
+- protoc 25.1, `cargo-nextest`, `diesel`, `wgslfmt`, and `linuxdeploy` are on the default `PATH`. The gcloud CLI is installed without credentials; SSH integration tests that call Google Cloud need an authenticated `gcloud` session.
