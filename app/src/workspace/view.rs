@@ -416,7 +416,7 @@ use crate::terminal::session_settings::{
     NewSessionSource, NotificationsMode, NotificationsSettings, SessionSettings,
     SessionSettingsChangedEvent, WorkingDirectoryMode,
 };
-use crate::terminal::settings::{SpacingMode, TerminalSettings};
+use crate::terminal::settings::{GitBranchNameTruncation, SpacingMode, TerminalSettings};
 use crate::terminal::shared_session::SharedSessionActionSource;
 use crate::terminal::shell::ShellType;
 #[cfg(all(feature = "local_fs", not(target_family = "wasm")))]
@@ -23508,6 +23508,12 @@ impl Workspace {
         let terminal_settings = TerminalSettings::as_ref(app);
         if *terminal_settings.use_audible_bell {
             context.set.insert(flags::USE_AUDIBLE_BELL_CONTEXT_FLAG);
+        }
+        if matches!(
+            *terminal_settings.git_branch_name_truncation,
+            GitBranchNameTruncation::Start
+        ) {
+            context.set.insert(flags::GIT_BRANCH_NAME_SHOW_START);
         }
         if *terminal_settings.show_terminal_zero_state_block.value() {
             context
